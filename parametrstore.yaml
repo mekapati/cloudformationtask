@@ -1,0 +1,45 @@
+--- 
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters: 
+  VpcId: 
+    Description: VPC ID for resources 
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::VPC>
+  SubnetID: 
+    Description: subnet ID for resources 
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Subnet> 
+  ImageID: 
+    Description: image ID for resources 
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::ID> 
+  InstanceType: 
+    Description: App EC2 instances type 
+    Type: AWS::SSM::Parameter::Value<String> 
+  KeyName: 
+    Description: Name of the existing EC2 keypair to enable RDP(remote desktop protocol) access to the instances 
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::KeyPair::KeyName> 
+Resources: 
+  MySecurityGroup: 
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties: 
+       GroupName: MySecurityGroup
+       GroupDescription: Secuity group with SSH and HTTPS access
+
+       SecurityGroupIngress: 
+          - IpProtocol: tcp 
+            FromPort: 443
+            ToPort: 443
+            CidrIp: 0.0.0.0/0 
+
+          - IpProtocol: tcp 
+            FromPort: 22
+            ToPort: 22
+            CidrIp: 0.0.0.0/0 
+  EC2Instances: 
+     Type: AWS::EC2::Instance
+     Properties: 
+       InstanceType: !Ref InstanceType  
+       KeyName: !Ref KeyName 
+       ImageId: !Ref ImageID 
+       SubnetId: !Ref SubnetID    
+       SecurityGroupIds:
+         - !GetAtt MySecurityGroup.GroupId

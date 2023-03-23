@@ -1,0 +1,108 @@
+---
+AWSTemplateFormatVersion: '2010-09-09' 
+Parameters: 
+  DisplayName: 
+     Description: Name of the portfolio 
+     Type: String 
+     Default: Portfolio by cloudformation
+  ProviderName: 
+     Description: Name of the ProviderName 
+     Type: String 
+     Default: Malyadri  
+  ProductName: 
+     Description: Name of the Product 
+     Type: String 
+     Default: Product for EC2    
+  ProductOwner: 
+     Description: Name of the Product Owner 
+     Type: String 
+     Default: Malyadri     
+  Principal: 
+     Description: ARN for principal 
+     Type: String 
+     Default: arn:aws:iam::365299945243:user/enduser   
+Resources: 
+  MyPortfolio: 
+     Type: 'AWS::ServiceCatalog::Portfolio' 
+     Properties: 
+       DisplayName: !Ref DisplayName 
+       Description: A collection of approved services for use within the organization 
+       ProviderName: !Ref ProviderName 
+  MyProduct: 
+    Type: 'AWS::ServiceCatalog::CloudFormationProduct'
+    Properties: 
+      Name: !Ref ProductName 
+      Owner: !Ref ProductOwner
+      ProvisioningArtifactParameters: 
+        # Info: { LoadTemplateFromURL https://s3.amazonaws.com/service-catalog1/ec2.yaml }
+       - Name: productfortest
+         Description: template for ec2 instances 
+         DisableTemplateValidation: true
+         Info: 
+           {
+           "LoadTemplateFromURL" : "https://s3.amazonaws.com/service-catalog1/ec2.yaml"
+           } 
+
+  ServiceCatalogPortfolioProductAssociation:
+    Type: "AWS::ServiceCatalog::PortfolioProductAssociation"
+    DependsOn: MyProduct
+    Properties:
+      PortfolioId: !Ref 'MyPortfolio'
+      ProductId: !Ref 'MyProduct'
+                          
+  MyRole: 
+    Type: 'AWS::IAM::Role'
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement: 
+          - Effect: Allow 
+            Principal: 
+              Service: 
+                - 'servicecatalog.amazonaws.com' 
+            Action: 
+                - 'sts:AssumeRole'  
+      Policies: 
+        - PolicyName: MyPolicy 
+          PolicyDocument: 
+            Statement: 
+               - Effect: Allow 
+                 Action: 
+                    - "Cloudformation:SetStackPolicy"
+                    - "sns:*"
+                    - "s3:GetObject"
+                    - "cloudformation:DescribeStackEvents"
+                    - "cloudformation:CreateStack" 
+                    - "cloudformation:DeleteStack"
+                    - "ec2:*"
+                    - "cloudformation:UpdateStack" 
+                    - "ssm:GetParameters"
+                    - "servicecatalog:*"
+                    - "cloudformation:ValidateTemplate"
+                    - "cloudformation:GetTemplateSummary"
+                    - "cloudformation:DescribeStacks"
+                 Resource: '*' 
+      RoleName: servicecatalogcloud1       
+  
+  LaunchConstraint: 
+      Type: 'AWS::ServiceCatalog::LaunchRoleConstraint'  
+      Properties: 
+         Description: specify a role for a product in a portfolio 
+         LocalRoleName: !Ref MyRole
+         PortfolioId: !Ref MyPortfolio 
+         ProductId: !Ref MyProduct 
+
+  Access: 
+    Type: 'AWS::ServiceCatalog::PortfolioPrincipalAssociation'       
+    Properties: 
+      PortfolioId: !Ref MyPortfolio
+      PrincipalARN: !Ref Principal
+      PrincipalType: IAM 
+        #  RoleArn: arn:aws:iam::365299945243:role/servicecatalogcloud1
+
+  # MyStackSet: 
+  #    Type: 'AWS::CloudFormation::StackSet'
+  #    Properties: 
+  #      AdministrationRoleARN: !               
+
+

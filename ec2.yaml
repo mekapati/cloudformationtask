@@ -1,0 +1,31 @@
+--- 
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:   
+  KeyName: 
+    Type: 'AWS::EC2::KeyPair::KeyName'  
+Resources: 
+  MySecurityGroup: 
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties: 
+       GroupName: MySecurityGroup
+       GroupDescription: Secuity group with SSH and HTTPS access
+
+       SecurityGroupIngress: 
+          - IpProtocol: tcp 
+            FromPort: 443
+            ToPort: 443
+            CidrIp: 0.0.0.0/0 
+
+          - IpProtocol: tcp 
+            FromPort: 22
+            ToPort: 22
+            CidrIp: 0.0.0.0/0 
+
+  MyEC2Instance:
+     Type: 'AWS::EC2::Instance'
+     Properties: 
+       ImageId: ami-097a2df4ac947655f 
+       InstanceType: t2.medium 
+       SecurityGroups: 
+        - !Ref MySecurityGroup 
+       KeyName: !Ref KeyName 

@@ -1,0 +1,100 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+ DBInstanceIdentifier:
+    Type: String
+    Default: "webapp-db"
+ DBUsername:
+    NoEcho: "true"
+    Description: Username for Postgresql database access
+    Type: String
+    MinLength: "1"
+    MaxLength: "16"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters.
+    Default: "postgres"
+ DBPassword:
+    NoEcho: "true"
+    Description: Password Postgresql database access
+    Type: String
+    MinLength: "8"
+    MaxLength: "41"
+    AllowedPattern: "[a-zA-Z0-9]*"
+    ConstraintDescription: Must contain only alphanumeric characters.
+ Vpc: 
+  Type: 'AWS::EC2::VPC::Id'
+ Subnet1: 
+  Type: 'AWS::EC2::Subnet::Id'  
+ Subnet2: 
+  Type: 'AWS::EC2::Subnet::Id'   
+ KeyName: 
+  Type: 'AWS::EC2::KeyPair::KeyName'  
+
+Resources: 
+  MySecurityGroup: 
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties: 
+       GroupName: MySecurityGroup
+       GroupDescription: Secuity group with SSH and HTTPS access
+
+       SecurityGroupIngress: 
+          - IpProtocol: tcp 
+            FromPort: 443
+            ToPort: 443
+            CidrIp: 0.0.0.0/0 
+
+          - IpProtocol: tcp 
+            FromPort: 22
+            ToPort: 22
+            CidrIp: 0.0.0.0/0 
+
+  MyEC2Instance:
+     Type: 'AWS::EC2::Instance'
+     Properties: 
+       ImageId: ami-097a2df4ac947655f 
+       InstanceType: t2.medium 
+       vpcID : !Ref Vpc 
+       SubnetIds : 
+          - !Ref Subnet1
+          - !Ref Subnet2
+       SecurityGroups: 
+        - !Ref MySecurityGroup 
+       KeyName: !Ref KeyName 
+
+  MyDB: 
+    Type: 'AWS::RDS::DBInstance'     
+    Properties: 
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      VPCSecurityGroups:
+        - !GetAtt DBEC2SecurityGroup.GroupId
+      AllocatedStorage: "5"
+      DBInstanceClass: db.t3.micro
+      Engine: postgres
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword  
+  RDSdbSubnets: 
+     Type: AWS::RDS::DBSubnetGroup
+     Properties: 
+       DBSubnetGroupDescription: Subnets for database 
+       SubnetIds: 
+         - !Ref Subnet1 
+         - !Ref Subnet2   
+
+  DBEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: DBEC2SecurityGroup
+      GroupDescription: Allow postgres inbound traffic
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupName:
+              Ref: MySecurityGroup
+
+
+
+
+
+
+
